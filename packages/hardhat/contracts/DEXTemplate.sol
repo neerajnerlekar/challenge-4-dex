@@ -56,7 +56,12 @@ contract DEX {
     /**
      * @notice Emitted when liquidity removed from DEX and decreases LPT count within DEX.
      */
-    event LiquidityRemoved();
+    event LiquidityRemoved(
+        address remover,
+        uint256 liquidityRemoved,
+        uint256 ethAmount,
+        uint256 balloonAmount
+    );
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -184,5 +189,25 @@ contract DEX {
     function withdraw(uint256 amount)
         public
         returns (uint256 eth_amount, uint256 token_amount)
-    {}
+    {
+        require(
+            liquidity[msg.sender] >= amount,
+            "amount cannot be more than what you own"
+        );
+        uint256 ethReserve = address(this).balance;
+        uint256 tokenReserve = token.balanceOf(address(this));
+
+        eth_amount = (amount * ethReserve) / totalLiquidity;
+        token_amount = (amount * tokenReserve) / totalLiquidity;
+
+        totalLiquidity -= amount;
+        (bool sent, ) = msg.sender.call{value: eth_amount}("");
+        require(sent, "failed to send the eth amount");
+        require(
+            token.transfer(msg.sender, token_amount),
+            "failed to send your token"
+        );
+        emit LiquidityRemoved(msg.sender, amount, eth_amount, token_amount);
+        return (eth_amount, token_amount);
+    }
 }
