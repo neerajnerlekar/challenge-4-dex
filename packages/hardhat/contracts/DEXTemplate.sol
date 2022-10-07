@@ -46,7 +46,12 @@ contract DEX {
     /**
      * @notice Emitted when liquidity provided to DEX and mints LPTs.
      */
-    event LiquidityProvided();
+    event LiquidityProvided(
+        address minter,
+        uint256 liquidityMinted,
+        uint256 ethDeposited,
+        uint256 balloonsDeposited
+    );
 
     /**
      * @notice Emitted when liquidity removed from DEX and decreases LPT count within DEX.
@@ -152,7 +157,24 @@ contract DEX {
      * NOTE: Equal parts of both assets will be removed from the user's wallet with respect to the price outlined by the AMM.
      */
     function deposit() public payable returns (uint256 tokensDeposited) {
-        uint256 total_liquidity = totalLiquidity;
+        require(msg.value > 0, "can't deposit 0 tokens");
+        uint256 ethReserve = address(this).balance - msg.value;
+        uint256 tokenReserve = token.balanceOf(address(this));
+        tokensDeposited = (tokenReserve * msg.value) / ethReserve;
+        uint256 liquidityMinted = (msg.value * totalLiquidity) / ethReserve;
+        totalLiquidity += tokensDeposited;
+        liquidity[msg.sender] += tokensDeposited;
+        require(
+            token.transferFrom(msg.sender, address(this), tokensDeposited),
+            "transfer failed"
+        );
+        emit LiquidityProvided(
+            msg.sender,
+            liquidityMinted,
+            msg.value,
+            tokensDeposited
+        );
+        return tokensDeposited;
     }
 
     /**
