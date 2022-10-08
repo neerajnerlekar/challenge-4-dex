@@ -59,7 +59,7 @@ const { ethers } = require("ethers");
 */
 
 /// 📡 What chain are your contracts deployed to?
-const initialNetwork = NETWORKS.localhost; // <------- select your target frontend network (localhost, rinkeby, xdai, mainnet)
+const initialNetwork = NETWORKS.goerli; // <------- select your target frontend network (localhost, rinkeby, xdai, mainnet)
 
 // 😬 Sorry for all the console logging
 const DEBUG = true;
@@ -79,7 +79,7 @@ const providers = [
 function App(props) {
   // specify all the chains your app is available on. Eg: ['localhost', 'mainnet', ...otherNetworks ]
   // reference './constants.js' for other networks
-  const networkOptions = [initialNetwork.name, "mainnet", "rinkeby"];
+  const networkOptions = [initialNetwork.name, "mainnet", "rinkeby", "goerli"];
 
   const [injectedProvider, setInjectedProvider] = useState();
   const [address, setAddress] = useState();
@@ -260,8 +260,8 @@ function App(props) {
 
   const EthToTokenSwapEvents = useEventListener(readContracts, "DEX", "EthToTokenSwap", localProvider, 1);
   console.log("⟠ -->🎈 EthToTokenSwapEvents:", EthToTokenSwapEvents);
-  // const TokenToEthSwapEvents = useEventListener(readContracts, "DEX", "TokenToEthSwap", 1);
-  // // console.log("🎈-->⟠ TokenToEthSwapEvents:", TokenToEthSwapEvents);
+  const TokenToEthSwapEvents = useEventListener(readContracts, "DEX", "TokenToEthSwap", localProvider, 1);
+  console.log("🎈-->⟠ TokenToEthSwapEvents:", TokenToEthSwapEvents);
   // const LiquidityProvidedEvents = useEventListener(readContracts, "DEX", "LiquidityProvided", 1);
   // // console.log("➕ LiquidityProvidedEvents:", LiquidityProvidedEvents);
   // const LiquidityRemovedEvents = useEventListener(readContracts, "DEX", "LiquidityRemoved", 1);
@@ -327,6 +327,18 @@ function App(props) {
             <div>👀 DEX Events:</div>
             <List
               dataSource={EthToTokenSwapEvents}
+              renderItem={item => {
+                return (
+                  <List.Item key={item.blockNumber}>
+                    <Address value={item.args[0]} ensProvider={localProvider} fontSize={16} />
+                    <Balance tokenOutput={item.args[1]} />
+                    <Balance ethInput={item.args[2]} />
+                  </List.Item>
+                );
+              }}
+            />
+            <List
+              dataSource={TokenToEthSwapEvents}
               renderItem={item => {
                 return (
                   <List.Item key={item.blockNumber}>
